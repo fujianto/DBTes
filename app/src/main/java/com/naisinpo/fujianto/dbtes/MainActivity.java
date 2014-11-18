@@ -1,5 +1,7 @@
 package com.naisinpo.fujianto.dbtes;
 
+import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
@@ -22,7 +24,15 @@ import java.util.Random;
 public class MainActivity extends ActionBarActivity {
     private CommentsDataSource datasource;
     private ListView listViewComment;
-    private Button btnAdd, btnDelete;
+    private Button btnAdd, btnDelete, btnDeleteAll;
+    private ArrayAdapter<Comment> adapter;
+    private List<Comment> values;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,51 +45,10 @@ public class MainActivity extends ActionBarActivity {
             setSupportActionBar(toolbar);
         }
 
-        try{
-            datasource = new CommentsDataSource(this);
-            datasource.open();
-        } catch (SQLException e){
-            Log.d("MainActivity SQLException", e.getMessage());
-        }
+        //todo 8: Using Async Task to Access database
+        CommentTask task = new CommentTask();
+        task.execute(this);
 
-        listViewComment = (ListView) findViewById(R.id.listComment);
-        btnAdd = (Button) findViewById(R.id.add);
-        btnDelete = (Button) findViewById(R.id.delete);
-        List<Comment> values = datasource.getAllComments();
-
-        // todo 6: use the Adapter to show the elements in a ListView
-        final ArrayAdapter<Comment> adapter = new ArrayAdapter<Comment>(this,
-                android.R.layout.simple_list_item_1, values);
-        listViewComment.setAdapter(adapter);
-
-        btnAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Comment comment = null;
-                String[] comments = new String[] { "Cool", "Very nice", "Hate it" };
-                int nextInt = new Random().nextInt(3);
-
-                //todo 7: save the new comment to the database, Add it to ListView
-                comment = datasource.createComment(comments[nextInt]);
-                adapter.add(comment);
-                adapter.notifyDataSetChanged();
-            }
-        });
-
-        btnDelete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Comment comment = null;
-
-                if (adapter.getCount() > 0) {
-                    comment = (Comment) adapter.getItem(0);
-                    datasource.deleteComment(comment);
-                    adapter.remove(comment);
-                }
-
-                adapter.notifyDataSetChanged();
-            }
-        });
     }
 
     @Override
@@ -118,5 +87,75 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+
+    public class CommentTask extends AsyncTask<Context, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Context... params) {
+            final Context APPS_CONTEXT = params[0];
+
+            try{
+                datasource = new CommentsDataSource(APPS_CONTEXT);
+                datasource.open();
+            } catch (SQLException e){
+                Log.d("MainActivity SQLException", e.getMessage());
+            }
+
+            values = datasource.getAllComments();
+            listViewComment = (ListView) findViewById(R.id.listComment);
+            btnAdd = (Button) findViewById(R.id.add);
+            btnDelete = (Button) findViewById(R.id.delete);
+            btnDeleteAll = (Button) findViewById(R.id.deleteAll);
+
+
+            // todo 6: use the Adapter to show the elements in a ListView
+            adapter = new ArrayAdapter<Comment>(APPS_CONTEXT, android.R.layout.simple_list_item_1, values);
+            listViewComment.setAdapter(adapter);
+
+            btnAdd.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Comment comment = null;
+                    String[] comments = new String[] { "Cool", "Very nice", "Hate it" };
+                    int nextInt = new Random().nextInt(3);
+
+                    //todo 7: save the new comment to the database, Add it to ListView
+                    comment = datasource.createComment(comments[nextInt]);
+                    adapter.add(comment);
+                    adapter.notifyDataSetChanged();
+                }
+            });
+
+            btnDelete.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Comment comment = null;
+
+                    if (adapter.getCount() > 0) {
+                        comment = (Comment) adapter.getItem(0);
+                        datasource.deleteComment(comment);
+                        adapter.remove(comment);
+                    }
+
+                    adapter.notifyDataSetChanged();
+                }
+            });
+
+            btnDeleteAll.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (adapter.getCount() > 0) {
+                        datasource.deleteAllComment();
+                        adapter.clear();
+                    }
+
+                    adapter.notifyDataSetChanged();
+                }
+            });
+
+            return null;
+        }
     }
 }

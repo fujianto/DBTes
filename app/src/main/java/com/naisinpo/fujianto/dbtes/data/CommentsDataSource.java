@@ -51,12 +51,12 @@ public class CommentsDataSource {
         //Insert value to DB
         long insertId = db.insert(CommentEntry.TABLE_NAME, null, values);
 
+        //Get Comment Value from database, return it. It will be added to Adapter later.
         Cursor cursor = db.query(
                 CommentEntry.TABLE_NAME,
                 allColumns, CommentEntry._ID + " = " + insertId,
                 null, null, null, null);
 
-        //Get Comment Value from database, return it. It will be added to Adapter later.
         cursor.moveToFirst();
         Comment newComment = cursorToComment(cursor);
         cursor.close();
@@ -69,6 +69,10 @@ public class CommentsDataSource {
         long id = comment.getId();
         System.out.println("Comment deleted with id: " + id);
         db.delete(CommentEntry.TABLE_NAME, CommentEntry._ID + " = " + id, null);
+    }
+
+    public void deleteAllComment(){
+        db.delete(CommentEntry.TABLE_NAME, null, null);
     }
 
     public List<Comment> getAllComments() {
